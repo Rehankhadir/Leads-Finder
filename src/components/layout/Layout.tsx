@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
+import { isDemoMode } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 import {
   LayoutDashboard, Search, List, Key, Bookmark, Database, BarChart3,
@@ -155,7 +156,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
           <div className="flex-1" />
 
-          <div className="relative">
+          {isDemoMode ? (
+            <span className="text-sm text-muted-foreground">Demo mode · Sample data</span>
+          ) : <div className="relative">
             <button
               onClick={() => setUserMenuOpen(!userMenuOpen)}
               className="flex items-center gap-3 p-1.5 pr-4 rounded-xl hover:bg-accent/50 transition-all duration-200 border border-transparent hover:border-border/50"
@@ -189,7 +192,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </div>
               </>
             )}
-          </div>
+          </div>}
         </header>
 
         <main className="p-6 lg:p-8 max-w-[1400px] fade-in">

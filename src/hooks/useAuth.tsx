@@ -1,6 +1,7 @@
 import { useState, useEffect, createContext, useContext, useCallback, type ReactNode } from 'react'
 import { supabase, isDemoMode } from '@/lib/supabase'
 import { authService } from '@/services/auth.service'
+import { demoStore } from '@/lib/demo-store'
 
 interface AuthUser {
   id: string
@@ -19,23 +20,19 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<AuthUser | null>(() => isDemoMode
+    ? { id: demoStore.getProfile().id, email: 'demo@example.com' }
+    : null)
+  const [loading, setLoading] = useState(!isDemoMode)
 
   useEffect(() => {
-    // Get initial session
+    if (isDemoMode) return
+
     const init = async () => {
       try {
-        if (isDemoMode) {
-          const u = await authService.getUser()
-          if (u && typeof u === 'object' && 'id' in u) {
-            setUser(u as AuthUser)
-          }
-        } else {
-          const { data: { session } } = await supabase.auth.getSession()
-          if (session?.user) {
-            setUser({ id: session.user.id, email: session.user.email || '' })
-          }
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.user) {
+          setUser({ id: session.user.id, email: session.user.email || '' })
         }
       } catch {
         // ignore
@@ -45,19 +42,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     init()
 
-    // Listen for auth changes (only for real Supabase)
-    if (!isDemoMode) {
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        (_event, session) => {
-          if (session?.user) {
-            setUser({ id: session.user.id, email: session.user.email || '' })
-          } else {
-            setUser(null)
-          }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (session?.user) {
+          setUser({ id: session.user.id, email: session.user.email || '' })
+        } else {
+          setUser(null)
         }
-      )
-      return () => subscription.unsubscribe()
-    }
+      }
+    )
+    return () => subscription.unsubscribe()
   }, [])
 
   const signIn = useCallback(async (email: string, password: string) => {
