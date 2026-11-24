@@ -12,6 +12,7 @@ export default function SignupPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
+  const [confirmationSent, setConfirmationSent] = useState(false)
   const [loading, setLoading] = useState(false)
   const { signUp } = useAuth()
   const navigate = useNavigate()
@@ -25,8 +26,8 @@ export default function SignupPage() {
     }
     setLoading(true)
     try {
-      await signUp(email, password, fullName)
-      navigate('/dashboard')
+      if (await signUp(email, password, fullName)) navigate('/dashboard')
+      else setConfirmationSent(true)
     } catch (err: any) {
       setError(err.message || 'Failed to create account')
     } finally {
@@ -52,7 +53,12 @@ export default function SignupPage() {
             <p className="text-muted-foreground mt-2">Start discovering leads today</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          {confirmationSent ? (
+            <div className="space-y-4 text-sm">
+              <p role="status">Check your email for a confirmation link, then sign in.</p>
+              <Link to="/login" className="text-violet-500 font-semibold">Back to sign in</Link>
+            </div>
+          ) : <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
               <div className="p-4 text-sm text-red-600 bg-red-500/10 border border-red-500/20 rounded-xl font-medium">
                 {error}
@@ -129,7 +135,7 @@ export default function SignupPage() {
                 </Link>
               </p>
             </div>
-          </form>
+          </form>}
         </div>
       </div>
     </div>

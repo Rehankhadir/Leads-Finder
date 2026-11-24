@@ -80,36 +80,57 @@ function scorePost(text: string, source?: string, mode?: string) {
   return { score, temperature, serviceNeeded, reasons };
 }
 
+type SearchPost = {
+  source: string;
+  postUrl: string;
+  title?: string | null;
+  content: string;
+  authorName?: string | null;
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  const respond = (body: Record<string, unknown>, status = 200) =>
+    Response.json(body, { headers: corsHeaders, status });
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const token = /^Bearer (\S+)$/i.exec(authHeader)?.[1];
+  if (!token) return respond({ error: "Sign in to search for leads." }, 401);
+
+  const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { headers: { Authorization: authHeader } },
+  });
+  let runId: string | undefined;
+  let totalFound = 0;
+  let errorMessage = "Discovery failed. Try again.";
+
   try {
     const { keywords, sources, location, dateRange, savedSearchId, mode } = await req.json();
+    if (!Array.isArray(keywords) || !keywords.length || !keywords.every(kw => typeof kw === "string" && kw.trim())
+        || !Array.isArray(sources) || !sources.length || !sources.every(source => typeof source === "string")) {
+      return respond({ error: "Enter a keyword and select a source." }, 400);
+    }
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    if (userError || !user) return respond({ error: "Your session expired. Sign in and try again." }, 401);
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
-    const authHeader = req.headers.get("Authorization") ?? "";
-
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) throw new Error("Not authenticated");
-
-    const { data: memberData } = await supabase
+    const { data: memberData, error: memberError } = await supabase
       .from("workspace_members")
       .select("workspace_id")
       .eq("user_id", user.id)
+      .order("created_at")
+      .order("workspace_id")
       .limit(1)
       .maybeSingle();
 
-    if (!memberData) throw new Error("No workspace found");
+    if (memberError) throw memberError;
+    if (!memberData) return respond({ error: "No Supabase workspace was found for your account." }, 403);
     const workspaceId = memberData.workspace_id;
 
-    const { data: run } = await supabase
+    errorMessage = "Could not start a discovery run in Supabase.";
+    const { data: run, error: runError } = await supabase
       .from("discovery_runs")
       .insert({
         workspace_id: workspaceId,
@@ -119,104 +140,59 @@ Deno.serve(async (req) => {
         keywords: keywords,
         sources: sources,
       })
-      .select()
+      .select("id")
       .single();
 
-    if (!run) throw new Error("Failed to create discovery run");
-
-    let allPosts: any[] = [];
-    let providerErrors: string[] = [];
+    if (runError) throw runError;
+    runId = run.id;
 
     const searchFunction = mode === "jobs" ? "search-jobs" : "search-freelance";
-    const fallbackFunction = "search-web";
-
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const headers: Record<string, string> = {};
-      if (session?.access_token) {
-        headers.Authorization = `Bearer ${session.access_token}`;
-      }
-
-      let response = await supabase.functions.invoke(searchFunction, {
-        body: { keywords, location, dateRange },
-        headers,
-      });
-
-      if (response.error) {
-        providerErrors.push(`${searchFunction}: ${response.error.message} - falling back to search-web`);
-        response = await supabase.functions.invoke(fallbackFunction, {
-          body: { keywords, location, dateRange },
-          headers,
-        });
-      }
-
-      if (response.error) {
-        providerErrors.push(`Search failed: ${response.error.message}`);
-      } else if (response.data?.posts) {
-        allPosts = response.data.posts;
-      }
-    } catch (e: any) {
-      providerErrors.push(`Search: ${e.message}`);
+    const options = { body: { keywords, location, dateRange }, headers: { Authorization: authHeader } };
+    errorMessage = "Search provider unavailable. Check the Supabase search functions and SerpAPI configuration.";
+    let response = await supabase.functions.invoke<{ posts: SearchPost[] }>(searchFunction, options);
+    if (response.error || !Array.isArray(response.data?.posts)) {
+      response = await supabase.functions.invoke<{ posts: SearchPost[] }>("search-web", options);
     }
-
-    let duplicatesRemoved = 0;
-    let qualifiedLeads = 0;
-
-    for (const post of allPosts) {
-      const { data: existing } = await supabase
-        .from("raw_posts")
-        .select("id")
-        .eq("workspace_id", workspaceId)
-        .eq("source", post.source)
-        .eq("post_url", post.postUrl)
-        .maybeSingle();
-
-      if (existing) { duplicatesRemoved++; continue; }
-
+    if (response.error || !Array.isArray(response.data?.posts)) {
+      throw response.error ?? new Error("Unexpected search response");
+    }
+    const posts = response.data.posts;
+    totalFound = posts.length;
+    errorMessage = "Discovery results could not be saved to Supabase.";
+    const leads = posts.map(post => {
       const text = `${post.title || ""} ${post.content}`.toLowerCase();
       const { score, temperature, serviceNeeded, reasons } = scorePost(text, post.source, mode);
-
-      const { data: lead } = await supabase
-        .from("leads")
-        .insert({
-          workspace_id: workspaceId,
-          discovery_run_id: run.id,
-          source: post.source,
-          source_url: post.postUrl,
-          title: post.title || null,
-          content: post.content,
-          name: post.authorName || null,
-          service_needed: serviceNeeded,
-          lead_score: score,
-          lead_temperature: temperature,
-          status: "new",
-          intent_summary: reasons.join(". ") || "Public post matching keywords",
-          first_detected_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-
-      if (lead) qualifiedLeads++;
+      return {
+        source: post.source,
+        source_url: post.postUrl,
+        title: post.title || null,
+        content: post.content,
+        name: post.authorName || null,
+        service_needed: serviceNeeded,
+        lead_score: score,
+        lead_temperature: temperature,
+        intent_summary: reasons.join(". ") || "Public post matching keywords",
+      };
+    });
+    const { data, error } = await supabase.rpc("complete_discovery_run", {
+      p_run_id: runId,
+      p_leads: leads,
+    }).single<{ saved_count: number; duplicate_count: number }>();
+    if (error) throw error;
+    return respond({
+      runId, status: "completed", totalFound, mode,
+      duplicatesRemoved: data.duplicate_count,
+      qualifiedLeads: data.saved_count,
+    });
+  } catch (error) {
+    console.error("Discovery failed", { runId, error });
+    if (runId) {
+      const { error: updateError } = await supabase.from("discovery_runs")
+        .update({ status: "failed", completed_at: new Date().toISOString(), total_found: totalFound, error_message: errorMessage })
+        .eq("id", runId)
+        .eq("status", "running");
+      if (updateError) console.error("Could not mark discovery run failed", updateError);
     }
-
-    await supabase
-      .from("discovery_runs")
-      .update({
-        status: "completed",
-        completed_at: new Date().toISOString(),
-        total_found: allPosts.length,
-        total_processed: allPosts.length - duplicatesRemoved,
-      })
-      .eq("id", run.id);
-
-    return new Response(
-      JSON.stringify({ runId: run.id, status: "completed", totalFound: allPosts.length, duplicatesRemoved, qualifiedLeads, providerErrors, mode }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-    );
-  } catch (error: any) {
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
-    );
+    return respond({ error: errorMessage, runId }, 500);
   }
 });

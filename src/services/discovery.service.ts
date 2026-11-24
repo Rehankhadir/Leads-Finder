@@ -1,3 +1,4 @@
+import { FunctionsHttpError } from '@supabase/supabase-js'
 import { supabase, isDemoMode } from '@/lib/supabase'
 import { demoStore } from '@/lib/demo-store'
 import type { SavedSearch, Source, DiscoveryRun } from '@/types'
@@ -116,7 +117,11 @@ export const discoveryService = {
       },
     })
 
-    if (error) throw new Error(`Discovery failed: ${error.message}`)
+    if (error instanceof FunctionsHttpError) {
+      const body = await error.context.json().catch(() => null)
+      if (typeof body?.error === 'string') throw new Error(body.error)
+    }
+    if (error) throw new Error('Could not finish discovery. Check Leads before retrying.')
     return data
   },
 }

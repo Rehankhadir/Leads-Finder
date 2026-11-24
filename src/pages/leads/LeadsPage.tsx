@@ -32,6 +32,7 @@ export default function LeadsPage() {
   const [serviceFilter, setServiceFilter] = useState('all')
   const [sortBy, setSortBy] = useState('newest')
   const [showFilters, setShowFilters] = useState(false)
+  const [loadError, setLoadError] = useState('')
 
   const fetchData = async () => {
     if (isDemoMode) {
@@ -39,15 +40,18 @@ export default function LeadsPage() {
       setDiscoveryRuns(demoStore.getDiscoveryRuns())
       return
     }
-    const [{ data: leadsData }, { data: runsData }] = await Promise.all([
+    const [{ data: leadsData, error: leadsError }, { data: runsData, error: runsError }] = await Promise.all([
       supabase.from('leads').select('*').order('created_at', { ascending: false }),
       supabase.from('discovery_runs').select('*').order('created_at', { ascending: false }),
     ])
     if (leadsData) setLeads(leadsData as Lead[])
     if (runsData) setDiscoveryRuns(runsData as DiscoveryRun[])
+    if (leadsError || runsError) setLoadError('Could not load all saved leads. Refresh to try again.')
   }
 
-  useEffect(() => { fetchData() }, [])
+  useEffect(() => {
+    fetchData().catch(() => setLoadError('Could not load saved leads. Refresh to try again.'))
+  }, [])
 
   const stats = useMemo(() => {
     const total = leads.length
@@ -164,6 +168,7 @@ export default function LeadsPage() {
 
   return (
     <div className="space-y-6">
+      {loadError && <p role="alert" className="text-sm text-red-600">{loadError}</p>}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Leads</h1>

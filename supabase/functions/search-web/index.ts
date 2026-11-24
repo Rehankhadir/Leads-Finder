@@ -28,6 +28,7 @@ Deno.serve(async (req) => {
 
     const results: any[] = [];
     const seen = new Set();
+    let successfulQueries = 0;
 
     for (const kw of keywords.slice(0, 3)) {
       const query = `"${kw}" looking for OR need OR hiring OR freelance OR web developer`;
@@ -37,6 +38,8 @@ Deno.serve(async (req) => {
         const resp = await fetch(url);
         if (!resp.ok) continue;
         const data = await resp.json();
+        if (data.error) continue;
+        successfulQueries++;
         const posts = data.organic_results || [];
 
         for (const r of posts) {
@@ -69,6 +72,8 @@ Deno.serve(async (req) => {
 
       await new Promise(r => setTimeout(r, 300));
     }
+
+    if (successfulQueries === 0) throw new Error("SerpAPI did not complete any searches");
 
     return new Response(
       JSON.stringify({ posts: results, total: results.length }),

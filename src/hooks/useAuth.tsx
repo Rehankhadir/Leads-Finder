@@ -12,7 +12,7 @@ interface AuthContextType {
   user: AuthUser | null
   loading: boolean
   signIn: (email: string, password: string) => Promise<void>
-  signUp: (email: string, password: string, fullName: string) => Promise<void>
+  signUp: (email: string, password: string, fullName: string) => Promise<boolean>
   signOut: () => Promise<void>
   resetPassword: (email: string) => Promise<void>
 }
@@ -28,20 +28,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (isDemoMode) return
 
-    const init = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (session?.user) {
-          setUser({ id: session.user.id, email: session.user.email || '' })
-        }
-      } catch {
-        // ignore
-      } finally {
-        setLoading(false)
-      }
-    }
-    init()
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         if (session?.user) {
@@ -49,6 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           setUser(null)
         }
+        setLoading(false)
       }
     )
     return () => subscription.unsubscribe()
@@ -61,12 +48,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const signUp = useCallback(async (email: string, password: string, fullName: string) => {
-    const data = await authService.signUp(email, password, fullName)
-    if (data && typeof data === 'object' && 'user' in data) {
-      setUser(data.user as AuthUser)
-    }
-  }, [])
+  const signUp = useCallback((email: string, password: string, fullName: string) =>
+    authService.signUp(email, password, fullName), [])
 
   const signOut = useCallback(async () => {
     await authService.signOut()

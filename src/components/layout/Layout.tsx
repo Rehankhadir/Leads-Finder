@@ -1,11 +1,9 @@
 import { useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { useAuth } from '@/hooks/useAuth'
-import { isDemoMode } from '@/lib/supabase'
+import { Link, useLocation } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import {
   LayoutDashboard, Search, List, Key, Bookmark, Database, BarChart3,
-  Settings, Menu, X, LogOut, User, Zap, ChevronDown, Briefcase, DollarSign
+  Settings, Menu, X, Zap, Briefcase, DollarSign
 } from 'lucide-react'
 
 const navItems = [
@@ -24,15 +22,7 @@ const navItems = [
 export function Layout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [userMenuOpen, setUserMenuOpen] = useState(false)
   const location = useLocation()
-  const navigate = useNavigate()
-  const { user, signOut } = useAuth()
-
-  const handleSignOut = async () => {
-    await signOut()
-    navigate('/login')
-  }
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
@@ -156,43 +146,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
           <div className="flex-1" />
 
-          {isDemoMode ? (
-            <span className="text-sm text-muted-foreground">Demo mode · Sample data</span>
-          ) : <div className="relative">
-            <button
-              onClick={() => setUserMenuOpen(!userMenuOpen)}
-              className="flex items-center gap-3 p-1.5 pr-4 rounded-xl hover:bg-accent/50 transition-all duration-200 border border-transparent hover:border-border/50"
-            >
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-md shadow-violet-500/25">
-                <User className="w-4 h-4 text-white" />
-              </div>
-              <span className="text-sm font-medium hidden sm:block">
-                {user?.email?.split('@')[0] || 'User'}
-              </span>
-              <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
-            </button>
-
-            {userMenuOpen && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
-                <div className="absolute right-0 top-full mt-2 w-60 bg-card rounded-2xl shadow-2xl border border-border/50 z-50 overflow-hidden slide-up">
-                  <div className="p-4 border-b border-border/40">
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-1">Signed in as</p>
-                    <p className="text-sm font-medium truncate">{user?.email || 'demo@example.com'}</p>
-                  </div>
-                  <div className="p-2">
-                    <button
-                      onClick={handleSignOut}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-xl hover:bg-destructive/10 hover:text-destructive text-left transition-all duration-200"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      Sign out
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>}
+          <span className="text-sm text-muted-foreground">Demo mode · Sample data</span>
         </header>
 
         <main className="p-6 lg:p-8 max-w-[1400px] fade-in">

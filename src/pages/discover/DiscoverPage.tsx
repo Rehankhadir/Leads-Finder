@@ -18,6 +18,7 @@ export default function DiscoverPage() {
   const [dateRange, setDateRange] = useState('7days')
   const [isRunning, setIsRunning] = useState(false)
   const [currentRun, setCurrentRun] = useState<any>(null)
+  const [runError, setRunError] = useState('')
   const [recentLeads, setRecentLeads] = useState<any[]>([])
 
   const addKeyword = () => {
@@ -37,6 +38,7 @@ export default function DiscoverPage() {
     if (keywords.length === 0 || sources.length === 0) return
     setIsRunning(true)
     setCurrentRun(null)
+    setRunError('')
     setRecentLeads([])
 
     try {
@@ -48,7 +50,7 @@ export default function DiscoverPage() {
       })
       setCurrentRun(run)
     } catch (err) {
-      console.error(err)
+      setRunError(err instanceof Error ? err.message : 'Discovery failed. Try again.')
     } finally {
       setIsRunning(false)
     }
@@ -248,7 +250,9 @@ export default function DiscoverPage() {
               <h3 className="font-semibold text-sm">Discovery Status</h3>
             </div>
             <CardContent className="pt-0">
-              {currentRun ? (
+              {runError ? (
+                <p role="alert" className="text-sm text-red-600">{runError}</p>
+              ) : currentRun ? (
                 <div className="space-y-4">
                   <div className="flex items-center gap-2.5">
                     {currentRun.status === 'completed' ? (
@@ -274,7 +278,7 @@ export default function DiscoverPage() {
                     {[
                       { label: 'Posts Found', value: currentRun.totalFound ?? currentRun.total_found ?? 0 },
                       { label: 'Duplicates Removed', value: currentRun.duplicatesRemoved ?? 0 },
-                      { label: 'Qualified Leads', value: currentRun.qualifiedLeads ?? currentRun.total_processed ?? 0, highlight: true },
+                      { label: 'Leads Saved', value: currentRun.qualifiedLeads ?? currentRun.total_processed ?? 0, highlight: true },
                     ].map((item) => (
                       <div key={item.label} className="flex justify-between text-sm">
                         <span className="text-muted-foreground">{item.label}</span>

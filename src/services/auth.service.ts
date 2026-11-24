@@ -6,33 +6,23 @@ export const authService = {
     if (isDemoMode) {
       return demoStore.signIn(email, password)
     }
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
     if (error) throw error
-    // Ensure session is persisted
-    if (data.session) {
-      await supabase.auth.setSession(data.session)
-    }
     return data
   },
 
   async signUp(email: string, password: string, fullName: string) {
     if (isDemoMode) {
-      return demoStore.signUp(email, password, fullName)
+      await demoStore.signUp(email, password, fullName)
+      return true
     }
     const { data, error } = await supabase.auth.signUp({
-      email,
+      email: email.trim(),
       password,
       options: { data: { full_name: fullName } },
     })
     if (error) throw error
-    // Auto sign-in after signup
-    if (data.user && !data.session) {
-      const signInResult = await supabase.auth.signInWithPassword({ email, password })
-      if (signInResult.data.session) {
-        return signInResult.data
-      }
-    }
-    return data
+    return Boolean(data.session)
   },
 
   async signOut() {
