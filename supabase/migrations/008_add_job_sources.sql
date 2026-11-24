@@ -1,13 +1,13 @@
 -- Add remote job board sources
-INSERT INTO sources (id, workspace_id, name, provider, is_enabled, config)
-SELECT 
-  gen_random_uuid(),
-  (SELECT workspace_id FROM workspace_members LIMIT 1),
+INSERT INTO sources (workspace_id, display_name, provider, is_enabled, configuration)
+SELECT
+  workspaces.id,
   sources_data.name,
   sources_data.provider,
   true,
   sources_data.config::jsonb
-FROM (VALUES
+FROM workspaces
+CROSS JOIN (VALUES
   ('We Work Remotely', 'weworkremotely', '{"type":"remote_board","category":"jobs","url":"https://weworkremotely.com"}'),
   ('Wellfound', 'wellfound', '{"type":"remote_board","category":"jobs","url":"https://wellfound.com/jobs"}'),
   ('Y Combinator Jobs', 'ycjobs', '{"type":"remote_board","category":"jobs","url":"https://www.ycombinator.com/jobs"}'),
@@ -37,4 +37,7 @@ FROM (VALUES
   ('Reddit', 'reddit', '{"type":"community","category":"both","url":"https://reddit.com"}'),
   ('Google Search', 'web_search', '{"type":"search_engine","category":"both","url":"https://google.com"}')
 ) AS sources_data(name, provider, config)
-WHERE NOT EXISTS (SELECT 1 FROM sources WHERE provider = sources_data.provider);
+WHERE NOT EXISTS (
+  SELECT 1 FROM sources
+  WHERE sources.workspace_id = workspaces.id AND sources.provider = sources_data.provider
+);

@@ -39,7 +39,7 @@ const demoSources: Source[] = [
 
 const demoLeads: Lead[] = [
   {
-    id: generateId(), workspace_id: demoWorkspaceId, raw_post_id: null,
+    id: generateId(), workspace_id: demoWorkspaceId, raw_post_id: null, discovery_run_id: null,
     name: 'Sarah Johnson', username: 'sarahj_biz', business_name: 'Boutique Fashion Co',
     source: 'reddit', source_url: 'https://reddit.com/r/smallbusiness/abc123',
     title: 'Need an ecommerce website for my clothing brand',
@@ -54,7 +54,7 @@ const demoLeads: Lead[] = [
     updated_at: new Date(Date.now() - 3600000).toISOString(),
   },
   {
-    id: generateId(), workspace_id: demoWorkspaceId, raw_post_id: null,
+    id: generateId(), workspace_id: demoWorkspaceId, raw_post_id: null, discovery_run_id: null,
     name: 'Mike Chen', username: 'mikechen_dev', business_name: 'TechStart Inc',
     source: 'reddit', source_url: 'https://reddit.com/r/startups/def456',
     title: 'Looking for React developer for SaaS dashboard',
@@ -69,7 +69,7 @@ const demoLeads: Lead[] = [
     updated_at: new Date(Date.now() - 7200000).toISOString(),
   },
   {
-    id: generateId(), workspace_id: demoWorkspaceId, raw_post_id: null,
+    id: generateId(), workspace_id: demoWorkspaceId, raw_post_id: null, discovery_run_id: null,
     name: 'Priya Sharma', username: 'priya_sharma', business_name: 'GreenLeaf Organics',
     source: 'web_search', source_url: 'https://indiehackers.com/post/ghi789',
     title: 'Need website for organic food business',
@@ -84,7 +84,7 @@ const demoLeads: Lead[] = [
     updated_at: new Date(Date.now() - 14400000).toISOString(),
   },
   {
-    id: generateId(), workspace_id: demoWorkspaceId, raw_post_id: null,
+    id: generateId(), workspace_id: demoWorkspaceId, raw_post_id: null, discovery_run_id: null,
     name: 'James Wilson', username: 'jwilson_biz', business_name: 'Wilson Consulting',
     source: 'reddit', source_url: 'https://reddit.com/r/entrepreneur/jkl012',
     title: 'Website redesign for consulting firm',
@@ -99,7 +99,7 @@ const demoLeads: Lead[] = [
     updated_at: new Date(Date.now() - 86400000).toISOString(),
   },
   {
-    id: generateId(), workspace_id: demoWorkspaceId, raw_post_id: null,
+    id: generateId(), workspace_id: demoWorkspaceId, raw_post_id: null, discovery_run_id: null,
     name: 'Lisa Park', username: 'lisapark', business_name: null,
     source: 'manual_import', source_url: 'https://twitter.com/lisapark/status/123',
     title: null,
@@ -114,7 +114,7 @@ const demoLeads: Lead[] = [
     updated_at: new Date(Date.now() - 172800000).toISOString(),
   },
   {
-    id: generateId(), workspace_id: demoWorkspaceId, raw_post_id: null,
+    id: generateId(), workspace_id: demoWorkspaceId, raw_post_id: null, discovery_run_id: null,
     name: 'Tom Bradley', username: 'tombradley', business_name: 'Bradley Real Estate',
     source: 'web_search', source_url: 'https://quora.com/question/mno345',
     title: 'Best way to build a property listing website?',
@@ -129,7 +129,7 @@ const demoLeads: Lead[] = [
     updated_at: new Date(Date.now() - 259200000).toISOString(),
   },
   {
-    id: generateId(), workspace_id: demoWorkspaceId, raw_post_id: null,
+    id: generateId(), workspace_id: demoWorkspaceId, raw_post_id: null, discovery_run_id: null,
     name: 'Emily Davis', username: 'emilyd', business_name: null,
     source: 'reddit', source_url: 'https://reddit.com/r/webdev/pqr678',
     title: 'How much should I charge for a landing page?',
@@ -144,7 +144,7 @@ const demoLeads: Lead[] = [
     updated_at: new Date(Date.now() - 345600000).toISOString(),
   },
   {
-    id: generateId(), workspace_id: demoWorkspaceId, raw_post_id: null,
+    id: generateId(), workspace_id: demoWorkspaceId, raw_post_id: null, discovery_run_id: null,
     name: 'Raj Patel', username: 'rajpatel', business_name: 'Patel Electronics',
     source: 'web_search', source_url: 'https://indiehackers.com/post/stu901',
     title: 'Need custom inventory management software',

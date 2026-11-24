@@ -1,6 +1,7 @@
 import { supabase, isDemoMode } from '@/lib/supabase'
 import { demoStore } from '@/lib/demo-store'
 import type { Keyword } from '@/types'
+import { getCurrentWorkspaceId } from './workspace.service'
 
 export const keywordsService = {
   async getKeywords() {
@@ -12,7 +13,8 @@ export const keywordsService = {
 
   async addKeyword(keyword: string, category?: string) {
     if (isDemoMode) return demoStore.addKeyword(keyword, category)
-    const { data, error } = await supabase.from('keywords').insert({ keyword, category: category || null, workspace_id: 'current' }).select().single()
+    const workspaceId = await getCurrentWorkspaceId()
+    const { data, error } = await supabase.from('keywords').insert({ keyword, category: category || null, workspace_id: workspaceId }).select().single()
     if (error) throw error
     return data as Keyword
   },

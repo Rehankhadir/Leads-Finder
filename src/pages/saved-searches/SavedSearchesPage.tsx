@@ -4,10 +4,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Select } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { demoStore } from '@/lib/demo-store'
-import { isDemoMode } from '@/lib/supabase'
+import { discoveryService } from '@/services/discovery.service'
 import { Plus, Trash2, Play, Clock, Bookmark } from 'lucide-react'
 import type { SavedSearch } from '@/types'
 import { formatRelativeTime } from '@/lib/utils'
@@ -15,14 +13,21 @@ import { formatRelativeTime } from '@/lib/utils'
 export default function SavedSearchesPage() {
   const [searches, setSearches] = useState<SavedSearch[]>([])
   const [showForm, setShowForm] = useState(false)
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(true)
   const [form, setForm] = useState({ name: '', description: '', keywords: '', sources: 'reddit,web_search', location: '' })
 
   useEffect(() => {
-    if (isDemoMode) setSearches(demoStore.getSavedSearches())
+    let active = true
+    discoveryService.getSavedSearches().then(
+      (data) => { if (active) setSearches([...data]) },
+      () => { if (active) setError('Could not load saved searches.') },
+    ).finally(() => { if (active) setBusy(false) })
+    return () => { active = false }
   }, [])
 
-  const handleCreate = () => {
-    if (!form.name.trim()) return
+  const handleCreate = async () => {
+    if (busy || !form.name.trim()) return
     const search = {
       name: form.name,
       description: form.description || null,
@@ -31,23 +36,37 @@ export default function SavedSearchesPage() {
       location: form.location || null,
       is_active: true,
     }
-    if (isDemoMode) {
-      const created = demoStore.addSavedSearch(search)
-      setSearches([...searches, created])
+    setBusy(true)
+    setError('')
+    try {
+      const created = await discoveryService.addSavedSearch(search)
+      setSearches(current => [...current, created])
+      setForm({ name: '', description: '', keywords: '', sources: 'reddit,web_search', location: '' })
+      setShowForm(false)
+    } catch {
+      setError('Could not create the saved search.')
+    } finally {
+      setBusy(false)
     }
-    setForm({ name: '', description: '', keywords: '', sources: 'reddit,web_search', location: '' })
-    setShowForm(false)
   }
 
-  const handleDelete = (id: string) => {
-    if (isDemoMode) {
-      demoStore.deleteSavedSearch(id)
-      setSearches(searches.filter(s => s.id !== id))
+  const handleDelete = async (id: string) => {
+    if (busy) return
+    setBusy(true)
+    setError('')
+    try {
+      await discoveryService.deleteSavedSearch(id)
+      setSearches(current => current.filter(search => search.id !== id))
+    } catch {
+      setError('Could not delete the saved search.')
+    } finally {
+      setBusy(false)
     }
   }
 
   return (
     <div className="space-y-8">
+      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Saved Searches</h1>

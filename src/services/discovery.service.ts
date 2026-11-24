@@ -1,6 +1,7 @@
 import { supabase, isDemoMode } from '@/lib/supabase'
 import { demoStore } from '@/lib/demo-store'
 import type { SavedSearch, Source, DiscoveryRun } from '@/types'
+import { getCurrentWorkspaceId } from './workspace.service'
 
 export const discoveryService = {
   async getSavedSearches() {
@@ -12,7 +13,8 @@ export const discoveryService = {
 
   async addSavedSearch(search: Omit<SavedSearch, 'id' | 'workspace_id' | 'created_at' | 'updated_at'>) {
     if (isDemoMode) return demoStore.addSavedSearch(search)
-    const { data, error } = await supabase.from('saved_searches').insert({ ...search, workspace_id: 'current' }).select().single()
+    const workspaceId = await getCurrentWorkspaceId()
+    const { data, error } = await supabase.from('saved_searches').insert({ ...search, workspace_id: workspaceId }).select().single()
     if (error) throw error
     return data as SavedSearch
   },

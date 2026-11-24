@@ -2,11 +2,9 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { demoStore } from '@/lib/demo-store'
-import { isDemoMode } from '@/lib/supabase'
+import { keywordsService } from '@/services/keywords.service'
 import { Plus, Trash2, Edit2, Check, X, Key } from 'lucide-react'
 import type { Keyword } from '@/types'
 
@@ -39,42 +37,56 @@ export default function KeywordsPage() {
   const [newCategory, setNewCategory] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editKeyword, setEditKeyword] = useState('')
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(true)
 
   useEffect(() => {
-    if (isDemoMode) setKeywords(demoStore.getKeywords())
+    let active = true
+    keywordsService.getKeywords().then(
+      (data) => { if (active) setKeywords([...data]) },
+      () => { if (active) setError('Could not load keywords.') },
+    ).finally(() => { if (active) setBusy(false) })
+    return () => { active = false }
   }, [])
+
+  const saveChange = async (change: () => Promise<void>) => {
+    if (busy) return
+    setBusy(true)
+    setError('')
+    try {
+      await change()
+    } catch {
+      setError('Could not save the keyword change.')
+    } finally {
+      setBusy(false)
+    }
+  }
 
   const handleAdd = () => {
     if (!newKeyword.trim()) return
-    if (isDemoMode) {
-      const kw = demoStore.addKeyword(newKeyword.trim(), newCategory || undefined)
-      setKeywords([...keywords, kw])
-    }
-    setNewKeyword('')
-    setNewCategory('')
+    return saveChange(async () => {
+      const keyword = await keywordsService.addKeyword(newKeyword.trim(), newCategory || undefined)
+      setKeywords(current => [...current, keyword])
+      setNewKeyword('')
+      setNewCategory('')
+    })
   }
 
-  const handleDelete = (id: string) => {
-    if (isDemoMode) {
-      demoStore.deleteKeyword(id)
-      setKeywords(keywords.filter(k => k.id !== id))
-    }
-  }
+  const handleDelete = (id: string) => saveChange(async () => {
+    await keywordsService.deleteKeyword(id)
+    setKeywords(current => current.filter(keyword => keyword.id !== id))
+  })
 
-  const handleToggle = (id: string, isActive: boolean) => {
-    if (isDemoMode) {
-      const updated = demoStore.updateKeyword(id, { is_active: !isActive })
-      if (updated) setKeywords(keywords.map(k => k.id === id ? updated : k))
-    }
-  }
+  const handleToggle = (id: string, isActive: boolean) => saveChange(async () => {
+    const updated = await keywordsService.updateKeyword(id, { is_active: !isActive })
+    if (updated) setKeywords(current => current.map(keyword => keyword.id === id ? updated : keyword))
+  })
 
-  const handleSaveEdit = (id: string) => {
-    if (isDemoMode) {
-      const updated = demoStore.updateKeyword(id, { keyword: editKeyword })
-      if (updated) setKeywords(keywords.map(k => k.id === id ? updated : k))
-    }
+  const handleSaveEdit = (id: string) => saveChange(async () => {
+    const updated = await keywordsService.updateKeyword(id, { keyword: editKeyword })
+    if (updated) setKeywords(current => current.map(keyword => keyword.id === id ? updated : keyword))
     setEditingId(null)
-  }
+  })
 
   return (
     <div className="space-y-8">
@@ -82,6 +94,8 @@ export default function KeywordsPage() {
         <h1 className="text-2xl font-bold tracking-tight">Keywords</h1>
         <p className="text-muted-foreground text-sm mt-1">Manage the keywords used for lead discovery</p>
       </div>
+
+      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
 
       <Card className="border-border/50">
         <div className="p-6 pb-4">
