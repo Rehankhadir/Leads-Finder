@@ -99,6 +99,7 @@ export default function JobsPage() {
             <p className="text-muted-foreground text-sm mt-0.5">
               Find remote job listings from 16+ job boards worldwide.
             </p>
+            <Link to="/opportunities?kind=jobs" className="dashboard-text-link">Browse live job listings <Globe size={15} aria-hidden="true" /></Link>
           </div>
         </div>
       </div>

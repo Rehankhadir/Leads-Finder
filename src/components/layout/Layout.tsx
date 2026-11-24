@@ -1,6 +1,6 @@
 ﻿import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { ArrowDownLeft, ArrowUpRight, BarChart3, Bookmark, Briefcase, ChevronRight, Database, KeyRound, LayoutDashboard, List, Menu, Moon, Radar, Search, Settings, Sparkles, Sun, X } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, BarChart3, Bookmark, Briefcase, ChevronRight, Database, Globe, KeyRound, LayoutDashboard, List, Menu, Moon, Radar, Search, Settings, Sparkles, Sun, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { isDemoMode } from '@/lib/supabase'
 import { useTheme } from '@/hooks/useTheme'
@@ -12,6 +12,7 @@ const groups = [
     { to: '/analytics', label: 'Analytics', icon: BarChart3 },
   ] },
   { label: 'Discovery', items: [
+    { to: '/opportunities', label: 'Live opportunities', icon: Globe },
     { to: '/discover', label: 'Discover leads', icon: Radar },
     { to: '/jobs', label: 'Find jobs', icon: Briefcase },
     { to: '/freelance', label: 'Freelance projects', icon: Sparkles },

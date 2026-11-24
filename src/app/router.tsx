@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { Layout } from '@/components/layout/Layout'
 import DashboardPage from '@/pages/dashboard/DashboardPage'
+import OpportunitiesPage from '@/pages/opportunities/OpportunitiesPage'
 import DiscoverPage from '@/pages/discover/DiscoverPage'
 import JobsPage from '@/pages/jobs/JobsPage'
 import FreelancePage from '@/pages/freelance/FreelancePage'
@@ -18,6 +19,7 @@ export default function AppRouter() {
       <Routes>
         <Route element={<Layout><Outlet /></Layout>}>
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/opportunities" element={<OpportunitiesPage />} />
           <Route path="/jobs" element={<JobsPage />} />
           <Route path="/freelance" element={<FreelancePage />} />
           <Route path="/discover" element={<DiscoverPage />} />

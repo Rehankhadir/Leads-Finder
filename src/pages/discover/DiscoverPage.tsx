@@ -72,6 +72,7 @@ export default function DiscoverPage() {
         <p className="text-muted-foreground text-sm mt-1">
           Find publicly available posts where people need web development services.
         </p>
+        <Link to="/opportunities?kind=leads" className="dashboard-text-link">Browse live client requests <Globe size={15} aria-hidden="true" /></Link>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

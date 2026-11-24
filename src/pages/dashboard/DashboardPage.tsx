@@ -71,7 +71,7 @@ export default function DashboardPage() {
           <p>Search for client projects, freelance work, and remote jobs.</p>
           <div className="dashboard-hero-actions">
             <Link to="/discover">Discover leads <ArrowRight size={17} aria-hidden="true" /></Link>
-            <Link to="/jobs">Browse jobs <ArrowUpRight size={15} aria-hidden="true" /></Link>
+            <Link to="/opportunities">Live opportunities <ArrowUpRight size={15} aria-hidden="true" /></Link>
           </div>
         </div>
         <div className="dashboard-radar" aria-hidden="true">

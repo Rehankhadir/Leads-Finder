@@ -88,6 +88,7 @@ export default function FreelancePage() {
             </p>
           </div>
         </div>
+        <Link to="/opportunities?kind=projects" className="dashboard-text-link">Browse live freelance projects <Sparkles size={15} aria-hidden="true" /></Link>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
