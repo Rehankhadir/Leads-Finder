@@ -1,158 +1,174 @@
-import { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+﻿import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { ArrowDownLeft, ArrowUpRight, BarChart3, Bookmark, Briefcase, ChevronRight, Database, KeyRound, LayoutDashboard, List, Menu, Moon, Radar, Search, Settings, Sparkles, Sun, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import {
-  LayoutDashboard, Search, List, Key, Bookmark, Database, BarChart3,
-  Settings, Menu, X, Zap, Briefcase, DollarSign
-} from 'lucide-react'
+import { isDemoMode } from '@/lib/supabase'
+import { useTheme } from '@/hooks/useTheme'
 
-const navItems = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/jobs', label: 'Discover Jobs', icon: Briefcase },
-  { to: '/freelance', label: 'Freelance Work', icon: DollarSign },
-  { to: '/discover', label: 'General Search', icon: Search },
-  { to: '/leads', label: 'Leads', icon: List },
-  { to: '/keywords', label: 'Keywords', icon: Key },
-  { to: '/saved-searches', label: 'Saved Searches', icon: Bookmark },
-  { to: '/sources', label: 'Sources', icon: Database },
-  { to: '/analytics', label: 'Analytics', icon: BarChart3 },
-  { to: '/settings', label: 'Settings', icon: Settings },
+const groups = [
+  { label: 'Workspace', items: [
+    { to: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+    { to: '/leads', label: 'Leads', icon: List },
+    { to: '/analytics', label: 'Analytics', icon: BarChart3 },
+  ] },
+  { label: 'Discovery', items: [
+    { to: '/discover', label: 'Discover leads', icon: Radar },
+    { to: '/jobs', label: 'Find jobs', icon: Briefcase },
+    { to: '/freelance', label: 'Freelance projects', icon: Sparkles },
+    { to: '/saved-searches', label: 'Saved searches', icon: Bookmark },
+  ] },
+  { label: 'Manage', items: [
+    { to: '/keywords', label: 'Keywords', icon: KeyRound },
+    { to: '/sources', label: 'Sources', icon: Database },
+    { to: '/settings', label: 'Settings', icon: Settings },
+  ] },
 ]
 
-export function Layout({ children }: { children: React.ReactNode }) {
-  const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [mobileOpen, setMobileOpen] = useState(false)
-  const location = useLocation()
+const destinations = groups.flatMap(group => group.items)
 
-  const SidebarContent = () => (
-    <div className="flex flex-col h-full">
-      <div className={cn("flex items-center gap-3 px-5 h-[72px] border-b border-border/40", !sidebarOpen && "justify-center px-0")}>
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/30 shrink-0">
-          <Zap className="w-5 h-5 text-white" />
+function WorkspaceNav({ onNavigate }: { onNavigate?: () => void }) {
+  return (
+    <nav aria-label="Workspace navigation" className="workspace-nav">
+      {groups.map(group => (
+        <div key={group.label} className="workspace-nav-group">
+          <p>{group.label}</p>
+          {group.items.map(({ to, label, icon: Icon }) => (
+            <NavLink key={to} to={to} onClick={onNavigate} className={({ isActive }) => cn('workspace-nav-link', isActive && 'is-active')}>
+              <Icon size={17} aria-hidden="true" />
+              {label}
+            </NavLink>
+          ))}
         </div>
-        {sidebarOpen && (
-          <span className="font-bold text-base gradient-text whitespace-nowrap">
-            Social Lead Finder
-          </span>
-        )}
-      </div>
-
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {navItems.map((item) => {
-          const Icon = item.icon
-          const active = location.pathname === item.to || location.pathname.startsWith(item.to + '/')
-          return (
-            <Link
-              key={item.to}
-              to={item.to}
-              onClick={() => setMobileOpen(false)}
-              className={cn(
-                'flex items-center gap-3 rounded-xl text-sm font-medium transition-all duration-200',
-                sidebarOpen ? 'px-3.5 py-2.5' : 'justify-center px-0 py-2.5',
-                active
-                  ? 'bg-gradient-to-r from-violet-500/15 to-indigo-500/10 text-violet-600 dark:text-violet-400 shadow-sm border border-violet-500/10'
-                  : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground border border-transparent'
-              )}
-              title={!sidebarOpen ? item.label : undefined}
-            >
-              <Icon className={cn("shrink-0", sidebarOpen ? "w-[18px] h-[18px]" : "w-5 h-5")} />
-              {sidebarOpen && <span className="truncate">{item.label}</span>}
-            </Link>
-          )
-        })}
-      </nav>
-
-      <div className="border-t border-border/40 p-4">
-        {sidebarOpen ? (
-          <div className="flex items-center gap-3 px-3 py-3 rounded-xl bg-gradient-to-r from-violet-500/5 to-indigo-500/5 border border-violet-500/10">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 pulse-dot shrink-0" />
-            <div>
-              <p className="text-[11px] font-medium text-foreground">System Active</p>
-              <p className="text-[10px] text-muted-foreground">Monitoring sources</p>
-            </div>
-          </div>
-        ) : (
-          <div className="flex justify-center py-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 pulse-dot" />
-          </div>
-        )}
-      </div>
-    </div>
+      ))}
+    </nav>
   )
+}
+
+function Wordmark({ onNavigate }: { onNavigate?: () => void }) {
+  return (
+    <Link to="/dashboard" className="workspace-wordmark" onClick={onNavigate}>
+      <span><Radar size={22} aria-hidden="true" /></span>
+      Lead Finder
+    </Link>
+  )
+}
+
+export function Layout({ children }: { children: ReactNode }) {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { theme, setTheme } = useTheme()
+  const menu = useRef<HTMLDialogElement>(null)
+  const searchDialog = useRef<HTMLDialogElement>(null)
+  const [query, setQuery] = useState('')
+  const current = destinations.find(item => location.pathname === item.to || location.pathname.startsWith(item.to + '/'))
+  const term = query.trim()
+  const matches = destinations.filter(item => item.label.toLowerCase().includes(term.toLowerCase()))
+  const closeMenu = () => menu.current?.close()
+  const openSearch = () => {
+    setQuery('')
+    searchDialog.current?.showModal()
+  }
+  const searchLeads = () => {
+    searchDialog.current?.close()
+    navigate({ pathname: '/leads', search: term ? '?' + new URLSearchParams({ q: term }) : '' })
+  }
+
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [location.pathname])
+
+  useEffect(() => {
+    const shortcut = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault()
+        if (!searchDialog.current?.open) {
+          menu.current?.close()
+          openSearch()
+        }
+      }
+    }
+    const desktop = window.matchMedia('(min-width: 1024px)')
+    const closeDesktopMenu = (event: MediaQueryListEvent) => {
+      if (event.matches) menu.current?.close()
+    }
+    document.addEventListener('keydown', shortcut)
+    desktop.addEventListener('change', closeDesktopMenu)
+    return () => {
+      document.removeEventListener('keydown', shortcut)
+      desktop.removeEventListener('change', closeDesktopMenu)
+    }
+  }, [])
 
   return (
-    <div className="min-h-screen bg-background bg-mesh">
-      {mobileOpen && (
-        <div className="fixed inset-0 bg-black/40 z-40 lg:hidden backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
-      )}
+    <div className="workspace-shell">
+      <a className="workspace-skip" href="#main-content">Skip to content</a>
+      <aside className="workspace-sidebar">
+        <Wordmark />
+        <WorkspaceNav />
+        {isDemoMode && <div className="workspace-mode"><span aria-hidden="true" /><div><strong>Demo workspace</strong><small>Sample data</small></div></div>}
+      </aside>
 
-      <div className={cn(
-        'fixed inset-y-0 left-0 z-50 bg-card/95 backdrop-blur-xl border-r border-border/40 transform transition-all duration-300 ease-out lg:hidden shadow-2xl',
-        mobileOpen ? 'translate-x-0 w-64' : '-translate-x-full'
-      )}>
-        <div className="flex items-center justify-between h-[72px] px-5 border-b border-border/40">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/30">
-              <Zap className="w-5 h-5 text-white" />
+      <div className="workspace-content">
+        <header className="workspace-header">
+          <div className="flex min-w-0 items-center gap-3">
+            <button className="workspace-icon-button workspace-menu-toggle" type="button" aria-label="Open navigation" aria-haspopup="dialog" onClick={() => menu.current?.showModal()}><Menu size={20} /></button>
+            <div className="workspace-breadcrumb">
+              <span>Workspace</span>
+              <ChevronRight size={14} aria-hidden="true" />
+              <strong>{current?.label ?? 'Overview'}</strong>
             </div>
-            <span className="font-bold text-base gradient-text">Lead Finder</span>
           </div>
-          <button onClick={() => setMobileOpen(false)} className="p-2 rounded-xl hover:bg-accent/50 transition-colors">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        <div className="overflow-y-auto py-4 px-3">
-          {navItems.map((item) => {
-            const Icon = item.icon
-            const active = location.pathname === item.to
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                onClick={() => setMobileOpen(false)}
-                className={cn(
-                  'flex items-center gap-3 px-3.5 py-2.5 text-sm font-medium transition-all rounded-xl mb-0.5',
-                  active
-                    ? 'bg-gradient-to-r from-violet-500/15 to-indigo-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/10'
-                    : 'text-muted-foreground hover:bg-accent/50 border border-transparent'
-                )}
-              >
-                <Icon className="w-[18px] h-[18px]" />
-                {item.label}
-              </Link>
-            )
-          })}
-        </div>
-      </div>
-
-      <div className={cn(
-        'hidden lg:flex flex-col fixed inset-y-0 left-0 z-30 bg-card/80 backdrop-blur-xl border-r border-border/40 transition-all duration-300 ease-out',
-        sidebarOpen ? 'w-60' : 'w-[68px]'
-      )}>
-        <SidebarContent />
-      </div>
-
-      <div className={cn('transition-all duration-300 ease-out', sidebarOpen ? 'lg:ml-60' : 'lg:ml-[68px]')}>
-        <header className="sticky top-0 z-20 h-[68px] border-b border-border/40 glass-strong flex items-center px-6 gap-4">
-          <button
-            onClick={() => {
-              if (window.innerWidth >= 1024) setSidebarOpen(!sidebarOpen)
-              else setMobileOpen(true)
-            }}
-            className="p-2 rounded-xl hover:bg-accent/50 transition-colors"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-
-          <div className="flex-1" />
-
-          <span className="text-sm text-muted-foreground">Demo mode · Sample data</span>
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            <button className="workspace-search" type="button" aria-label="Search workspace" aria-haspopup="dialog" aria-keyshortcuts="Control+k Meta+k" onClick={openSearch}>
+              <Search size={17} aria-hidden="true" />
+              <span>Search workspace</span>
+              <kbd>Ctrl K</kbd>
+            </button>
+            <button className="workspace-icon-button" type="button" aria-label="Toggle color theme" onClick={() => {
+              const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+              setTheme(isDark ? 'light' : 'dark')
+            }}><span className="dark:hidden"><Moon size={17} /></span><span className="hidden dark:block"><Sun size={17} /></span></button>
+          </div>
         </header>
-
-        <main className="p-6 lg:p-8 max-w-[1400px] fade-in">
-          {children}
-        </main>
+        <main id="main-content" tabIndex={-1} className="workspace-main">{children}</main>
       </div>
+
+      <dialog className="workspace-menu-dialog" ref={menu} aria-label="Workspace navigation" onClick={event => { if (event.target === event.currentTarget) closeMenu() }}>
+        <div className="workspace-menu-inner">
+          <div className="flex items-center justify-between px-4">
+            <Wordmark onNavigate={closeMenu} />
+            <button className="workspace-icon-button" type="button" aria-label="Close navigation" onClick={closeMenu} autoFocus><X size={19} /></button>
+          </div>
+          <WorkspaceNav onNavigate={closeMenu} />
+          {isDemoMode && <div className="workspace-mode"><span aria-hidden="true" /><div><strong>Demo workspace</strong><small>Sample data</small></div></div>}
+        </div>
+      </dialog>
+
+      <dialog className="workspace-command" ref={searchDialog} aria-label="Search workspace" onClick={event => { if (event.target === event.currentTarget) searchDialog.current?.close() }}>
+        <div>
+          <form className="workspace-command-form" onSubmit={event => { event.preventDefault(); searchLeads() }}>
+            <Search size={20} aria-hidden="true" />
+            <input autoFocus aria-label="Find pages or search leads" placeholder="Find pages or search leads…" value={query} onChange={event => setQuery(event.target.value)} />
+            <button className="workspace-icon-button" type="button" aria-label="Close search" onClick={() => searchDialog.current?.close()}><X size={18} /></button>
+          </form>
+          <div className="workspace-command-results">
+            {term && (
+              <button type="button" className="workspace-command-item" onClick={searchLeads}>
+                <Search size={17} aria-hidden="true" />
+                <span className="truncate">Search leads for “{term}”</span>
+                <ArrowDownLeft size={16} aria-hidden="true" />
+              </button>
+            )}
+            {matches.map(({ to, label, icon: Icon }) => (
+              <Link key={to} to={to} className="workspace-command-item" onClick={() => searchDialog.current?.close()}>
+                <Icon size={17} aria-hidden="true" />
+                <span>{label}</span>
+                <ArrowUpRight size={15} aria-hidden="true" />
+              </Link>
+            ))}
+          </div>
+        </div>
+      </dialog>
     </div>
   )
 }

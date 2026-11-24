@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -25,14 +25,28 @@ interface LeadGroup {
 export default function LeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([])
   const [discoveryRuns, setDiscoveryRuns] = useState<DiscoveryRun[]>([])
-  const [search, setSearch] = useState('')
+  const [params, setParams] = useSearchParams()
+  const search = params.get('q') ?? ''
   const [statusFilter, setStatusFilter] = useState('all')
-  const [tempFilter, setTempFilter] = useState('all')
+  const temperature = params.get('temperature')
+  const tempFilter = temperature && ['hot', 'warm', 'cold'].includes(temperature) ? temperature : 'all'
+  const todayOnly = params.get('period') === 'today'
   const [sourceFilter, setSourceFilter] = useState('all')
   const [serviceFilter, setServiceFilter] = useState('all')
   const [sortBy, setSortBy] = useState('newest')
   const [showFilters, setShowFilters] = useState(false)
   const [loadError, setLoadError] = useState('')
+
+  const updateFilter = (key: string, value: string | null) => {
+    setParams(current => {
+      const next = new URLSearchParams(current)
+      if (value) next.set(key, value)
+      else next.delete(key)
+      return next
+    }, { replace: true })
+  }
+  const setSearch = (value: string) => updateFilter('q', value)
+  const setTempFilter = (value: string) => updateFilter('temperature', value === 'all' ? null : value)
 
   const fetchData = async () => {
     if (isDemoMode) {
@@ -79,6 +93,10 @@ export default function LeadsPage() {
     }
     if (statusFilter !== 'all') result = result.filter(l => l.status === statusFilter)
     if (tempFilter !== 'all') result = result.filter(l => l.lead_temperature === tempFilter)
+    if (todayOnly) {
+      const today = new Date().toDateString()
+      result = result.filter(lead => new Date(lead.created_at).toDateString() === today)
+    }
     if (sourceFilter !== 'all') result = result.filter(l => l.source === sourceFilter)
     if (serviceFilter !== 'all') result = result.filter(l => l.service_needed === serviceFilter)
 
@@ -87,7 +105,7 @@ export default function LeadsPage() {
     else result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
     return result
-  }, [leads, search, statusFilter, tempFilter, sourceFilter, serviceFilter, sortBy])
+  }, [leads, search, statusFilter, tempFilter, todayOnly, sourceFilter, serviceFilter, sortBy])
 
   const groupedLeads = useMemo(() => {
     const runMap = new Map<string, DiscoveryRun>()
@@ -164,7 +182,14 @@ export default function LeadsPage() {
 
   const services = useMemo(() => [...new Set(leads.map(l => l.service_needed).filter(Boolean))] as string[], [leads])
 
-  const activeFilters = [statusFilter, tempFilter, sourceFilter, serviceFilter].filter(f => f !== 'all').length
+  const activeFilters = [statusFilter, tempFilter, sourceFilter, serviceFilter].filter(f => f !== 'all').length + Number(todayOnly)
+
+  const clearFilters = () => {
+    setStatusFilter('all')
+    setSourceFilter('all')
+    setServiceFilter('all')
+    setParams(search ? { q: search } : {}, { replace: true })
+  }
 
   return (
     <div className="space-y-6">
@@ -176,7 +201,7 @@ export default function LeadsPage() {
             Manage and track your discovered leads
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Link to="/jobs">
             <Button variant="outline" className="h-10 px-4">
               <Zap className="w-4 h-4 mr-2" />
@@ -221,25 +246,27 @@ export default function LeadsPage() {
             <div className="relative flex-1">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60" />
               <Input
-                placeholder="Search by name, business, service, content..."
+                aria-label="Search leads"
+                placeholder="Search leads, businesses, or services"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-10 bg-background h-11"
+                className="pl-10 pr-9 bg-background h-11"
               />
               {search && (
-                <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-foreground">
+                <button type="button" aria-label="Clear search" onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                   <XCircle className="w-4 h-4" />
                 </button>
               )}
             </div>
             <div className="flex gap-2 flex-wrap">
-              <Select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="w-[150px] bg-background h-11">
+              <Select aria-label="Sort leads" value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="w-[150px] bg-background h-11">
                 <option value="newest">Newest First</option>
                 <option value="score">Highest Score</option>
                 <option value="oldest">Oldest First</option>
               </Select>
               <Button
                 variant="outline"
+                aria-expanded={showFilters}
                 onClick={() => setShowFilters(!showFilters)}
                 className={`h-11 ${showFilters ? 'border-violet-500 text-violet-500 bg-violet-500/5' : ''}`}
               >
@@ -253,9 +280,16 @@ export default function LeadsPage() {
             </div>
           </div>
 
+          {(tempFilter !== 'all' || todayOnly) && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {tempFilter !== 'all' && <button type="button" className="workspace-filter-chip capitalize" onClick={() => setTempFilter('all')} aria-label={'Clear ' + tempFilter + ' leads filter'}>{tempFilter} leads <XCircle size={14} /></button>}
+              {todayOnly && <button type="button" className="workspace-filter-chip" onClick={() => updateFilter('period', null)} aria-label="Clear new today filter">New today <XCircle size={14} /></button>}
+            </div>
+          )}
+
           {showFilters && (
             <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-border/40">
-              <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-[130px] bg-background h-10">
+              <Select aria-label="Filter by status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-[130px] bg-background h-10">
                 <option value="all">All Status</option>
                 <option value="new">New</option>
                 <option value="viewed">Viewed</option>
@@ -266,13 +300,13 @@ export default function LeadsPage() {
                 <option value="converted">Converted</option>
                 <option value="rejected">Rejected</option>
               </Select>
-              <Select value={tempFilter} onChange={(e) => setTempFilter(e.target.value)} className="w-[130px] bg-background h-10">
+              <Select aria-label="Filter by temperature" value={tempFilter} onChange={(e) => setTempFilter(e.target.value)} className="w-[130px] bg-background h-10">
                 <option value="all">All Temperature</option>
                 <option value="hot">Hot</option>
                 <option value="warm">Warm</option>
                 <option value="cold">Cold</option>
               </Select>
-              <Select value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} className="w-[140px] bg-background h-10">
+              <Select aria-label="Filter by source" value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} className="w-[140px] bg-background h-10">
                 <option value="all">All Sources</option>
                 <option value="reddit">Reddit</option>
                 <option value="web_search">Web Search</option>
@@ -288,7 +322,7 @@ export default function LeadsPage() {
                 <option value="remotive">Remotive</option>
                 <option value="manual_import">Manual</option>
               </Select>
-              <Select value={serviceFilter} onChange={(e) => setServiceFilter(e.target.value)} className="w-[160px] bg-background h-10">
+              <Select aria-label="Filter by service" value={serviceFilter} onChange={(e) => setServiceFilter(e.target.value)} className="w-[160px] bg-background h-10">
                 <option value="all">All Services</option>
                 {services.map(s => <option key={s} value={s}>{s}</option>)}
               </Select>
@@ -297,7 +331,7 @@ export default function LeadsPage() {
                   variant="ghost"
                   size="sm"
                   className="h-10 text-xs text-muted-foreground"
-                  onClick={() => { setStatusFilter('all'); setTempFilter('all'); setSourceFilter('all'); setServiceFilter('all') }}
+                  onClick={clearFilters}
                 >
                   Clear all filters
                 </Button>
@@ -307,7 +341,7 @@ export default function LeadsPage() {
         </CardContent>
       </Card>
 
-      <div className="text-sm text-muted-foreground font-medium">
+      <div className="text-sm text-muted-foreground font-medium" role="status">
         {filteredLeads.length} lead{filteredLeads.length !== 1 ? 's' : ''} across {groupedLeads.length} session{groupedLeads.length !== 1 ? 's' : ''}
       </div>
 

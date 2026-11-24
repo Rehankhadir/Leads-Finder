@@ -1,11 +1,13 @@
-import { useState, useEffect, useCallback } from 'react'
+import { createContext, createElement, useContext, useState, useEffect, type ReactNode } from 'react'
 
 type Theme = 'light' | 'dark' | 'system'
 
-export function useTheme() {
+const ThemeContext = createContext<{ theme: Theme; setTheme: (theme: Theme) => void } | null>(null)
+
+export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
-    const stored = localStorage.getItem('theme') as Theme | null
-    return stored || 'system'
+    const stored = localStorage.getItem('theme')
+    return stored === 'dark' || stored === 'light' ? stored : 'system'
   })
 
   useEffect(() => {
@@ -27,7 +29,11 @@ export function useTheme() {
     }
   }, [theme])
 
-  const setTheme = useCallback((t: Theme) => setThemeState(t), [])
+  return createElement(ThemeContext.Provider, { value: { theme, setTheme: setThemeState } }, children)
+}
 
-  return { theme, setTheme }
+export function useTheme() {
+  const context = useContext(ThemeContext)
+  if (!context) throw new Error('useTheme must be used inside ThemeProvider')
+  return context
 }

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
-import { Select } from '@/components/ui/select'
 import { demoStore } from '@/lib/demo-store'
-import { isDemoMode } from '@/lib/supabase'
+import { isDemoMode, supabase } from '@/lib/supabase'
+import { getSourceLabel } from '@/lib/utils'
+import type { Lead } from '@/types'
 import { BarChart3, TrendingUp, Users, Target } from 'lucide-react'
 import {
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar,
@@ -12,23 +13,47 @@ import {
 const COLORS = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899']
 
 export default function AnalyticsPage() {
-  const [stats, setStats] = useState<any>(null)
+  const [leads, setLeads] = useState<Lead[] | null>(() => isDemoMode ? demoStore.getLeads() : null)
+  const [loadError, setLoadError] = useState(false)
 
   useEffect(() => {
-    if (isDemoMode) setStats(demoStore.getStats())
+    if (isDemoMode) return
+    let active = true
+    supabase.from('leads').select('*').then(({ data, error }) => {
+      if (!active) return
+      if (error) setLoadError(true)
+      else setLeads(data)
+    })
+    return () => { active = false }
   }, [])
 
-  if (!stats) {
+  if (loadError) return <p role="alert" className="workspace-alert">Could not load analytics. Refresh to try again.</p>
+
+  if (!leads) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-[3px] border-violet-500/20 border-t-violet-500 rounded-full animate-spin" />
+        <p role="status">Loading analytics…</p>
       </div>
     )
   }
 
+  const stats = {
+    totalLeads: leads.length,
+    hotLeads: leads.filter(lead => lead.lead_temperature === 'hot').length,
+    bySource: {} as Record<string, number>,
+    byService: {} as Record<string, number>,
+    byStatus: {} as Record<string, number>,
+  }
+  for (const lead of leads) {
+    const service = lead.service_needed || 'Unknown'
+    stats.bySource[lead.source] = (stats.bySource[lead.source] ?? 0) + 1
+    stats.byService[service] = (stats.byService[service] ?? 0) + 1
+    stats.byStatus[lead.status] = (stats.byStatus[lead.status] ?? 0) + 1
+  }
+
   const sourceData = Object.entries(stats.bySource).map(([name, value]) => ({
-    name: name === 'reddit' ? 'Reddit' : name === 'web_search' ? 'Web Search' : 'Manual',
-    value: value as number,
+    name: getSourceLabel(name),
+    value,
   }))
 
   const serviceData = Object.entries(stats.byService).map(([name, value]) => ({
@@ -47,10 +72,11 @@ export default function AnalyticsPage() {
   const timeSeriesData = Array.from({ length: 7 }, (_, i) => {
     const date = new Date()
     date.setDate(date.getDate() - (6 - i))
+    const dailyLeads = leads.filter(lead => new Date(lead.created_at).toDateString() === date.toDateString())
     return {
       date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      leads: Math.floor(Math.random() * 15) + 3,
-      hot: Math.floor(Math.random() * 5) + 1,
+      leads: dailyLeads.length,
+      hot: dailyLeads.filter(lead => lead.lead_temperature === 'hot').length,
     }
   })
 
