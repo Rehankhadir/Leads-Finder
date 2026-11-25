@@ -80,7 +80,6 @@ export const discoveryService = {
           name: demoNames[i % demoNames.length],
           business_name: demoBusinesses[i % demoBusinesses.length],
           source: params.sources[i % params.sources.length] || 'web_search',
-          source_url: `https://example.com/post/${runId}-${i}`,
           title: `${params.keywords[i % params.keywords.length]} - looking for help`,
           content: `We need help with ${params.keywords[i % params.keywords.length]}. Please reach out if you can assist.`,
           service_needed: demoServices[i % demoServices.length],

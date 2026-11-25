@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { Link, useParams, useNavigate } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -8,8 +8,33 @@ import { Label } from '@/components/ui/label'
 import { demoStore } from '@/lib/demo-store'
 import { isDemoMode, supabase } from '@/lib/supabase'
 import { getTemperatureColor, getStatusColor, getSourceIcon, getSourceLabel, formatDate, formatRelativeTime } from '@/lib/utils'
-import { ArrowLeft, ExternalLink, Trash2, Flame, MapPin, MessageSquare, Activity, ChevronDown, ArrowUpRight } from 'lucide-react'
+import { ArrowLeft, ExternalLink, Trash2, Flame, MapPin, MessageSquare, Activity, ChevronDown } from 'lucide-react'
 import type { Lead, LeadNote, LeadActivity } from '@/types'
+
+// Older seeded workspaces may still contain these fictional source URLs.
+const seededSourceUrls = new Set([
+  'https://reddit.com/r/smallbusiness/abc123',
+  'https://reddit.com/r/startups/def456',
+  'https://indiehackers.com/post/ghi789',
+  'https://indiehackers.com/post/stu901',
+])
+
+function getOriginalPostUrl(sourceUrl: string | null) {
+  if (!sourceUrl) return null
+  try {
+    const url = new URL(sourceUrl)
+    const host = url.hostname.replace(/^www\./, '')
+    if (
+      !['https:', 'http:'].includes(url.protocol)
+      || url.username || url.password
+      || ['example.com', 'example.net', 'example.org'].some(domain => host === domain || host.endsWith('.' + domain))
+      || seededSourceUrls.has('https://' + host + url.pathname.replace(/\/$/, ''))
+    ) return null
+    return url.href
+  } catch {
+    return null
+  }
+}
 
 export default function LeadDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -98,6 +123,7 @@ export default function LeadDetailPage() {
   }
 
   const statuses = ['new', 'viewed', 'saved', 'contacted', 'replied', 'qualified', 'converted', 'rejected']
+  const originalPostUrl = getOriginalPostUrl(lead.source_url)
 
   const detailItems = [
     { label: 'Source Website', value: getSourceLabel(lead.source) },
@@ -192,24 +218,30 @@ export default function LeadDetailPage() {
             </CardContent>
           </Card>
 
-          {lead.content && (
+          {(lead.content || lead.title || originalPostUrl) && (
             <Card className="border-border/50">
-              <div className="flex items-center justify-between p-6 pb-4">
-                <h3 className="font-semibold text-sm">Original Post</h3>
-                {lead.source_url && (
-                  <a href={lead.source_url} target="_blank" rel="noopener noreferrer">
-                    <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5">
-                      <ExternalLink className="w-3 h-3" />
-                      View Original
-                    </Button>
+              <div className="flex flex-wrap items-center justify-between gap-2 p-6 pb-4">
+                <h3 className="font-semibold text-sm">{originalPostUrl ? 'Original Post' : isDemoMode ? 'Sample Post' : 'Post Details'}</h3>
+                {originalPostUrl && (
+                  <a className="workspace-search" href={originalPostUrl} target="_blank" rel="noopener noreferrer" aria-label="View original post (opens in a new tab)">
+                    <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+                    View Original
                   </a>
                 )}
               </div>
               <CardContent className="pt-0">
                 {lead.title && <h4 className="font-semibold mb-3">{lead.title}</h4>}
-                <div className="p-4 rounded-2xl bg-muted/20 border border-border/30">
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">{lead.content}</p>
-                </div>
+                {lead.content && (
+                  <div className="p-4 rounded-2xl bg-muted/20 border border-border/30">
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">{lead.content}</p>
+                  </div>
+                )}
+                {!originalPostUrl && (
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    {isDemoMode ? 'Sample leads do not have an original listing. ' : 'An original link is unavailable. '}
+                    <Link to="/opportunities" className="font-medium text-accent-foreground underline underline-offset-4">Browse live opportunities</Link>
+                  </p>
+                )}
                 <div className="flex items-center gap-4 mt-4 text-xs text-muted-foreground">
                   {lead.username && <span className="flex items-center gap-1"><span className="text-muted-foreground/40">@</span>{lead.username}</span>}
                   {lead.name && <span>{lead.name}</span>}

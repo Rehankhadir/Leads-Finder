@@ -41,7 +41,7 @@ const demoLeads: Lead[] = [
   {
     id: generateId(), workspace_id: demoWorkspaceId, raw_post_id: null, discovery_run_id: null,
     name: 'Sarah Johnson', username: 'sarahj_biz', business_name: 'Boutique Fashion Co',
-    source: 'reddit', source_url: 'https://reddit.com/r/smallbusiness/abc123',
+    source: 'reddit', source_url: null,
     title: 'Need an ecommerce website for my clothing brand',
     content: 'Hi everyone, I run a small clothing boutique and need someone to build me an ecommerce website. We need something with Shopify integration, inventory management, and a clean modern design. Budget is around $5000-8000. Need it done within 6 weeks.',
     service_needed: 'E-commerce Website', business_type: 'Clothing/Fashion',
@@ -56,7 +56,7 @@ const demoLeads: Lead[] = [
   {
     id: generateId(), workspace_id: demoWorkspaceId, raw_post_id: null, discovery_run_id: null,
     name: 'Mike Chen', username: 'mikechen_dev', business_name: 'TechStart Inc',
-    source: 'reddit', source_url: 'https://reddit.com/r/startups/def456',
+    source: 'reddit', source_url: null,
     title: 'Looking for React developer for SaaS dashboard',
     content: 'We are building a SaaS analytics platform and need an experienced React developer to help build the frontend dashboard. Looking for someone with TypeScript, Tailwind CSS, and charting library experience. Remote work, flexible hours.',
     service_needed: 'React Development', business_type: 'SaaS/Technology',
@@ -71,7 +71,7 @@ const demoLeads: Lead[] = [
   {
     id: generateId(), workspace_id: demoWorkspaceId, raw_post_id: null, discovery_run_id: null,
     name: 'Priya Sharma', username: 'priya_sharma', business_name: 'GreenLeaf Organics',
-    source: 'web_search', source_url: 'https://indiehackers.com/post/ghi789',
+    source: 'web_search', source_url: null,
     title: 'Need website for organic food business',
     content: 'Starting an organic food delivery service and need a website. Looking for something clean, modern, with online ordering capability. We are based in Mumbai, India. Would prefer working with someone who understands the Indian market.',
     service_needed: 'Website Development', business_type: 'Food/Delivery',
@@ -86,7 +86,7 @@ const demoLeads: Lead[] = [
   {
     id: generateId(), workspace_id: demoWorkspaceId, raw_post_id: null, discovery_run_id: null,
     name: 'James Wilson', username: 'jwilson_biz', business_name: 'Wilson Consulting',
-    source: 'reddit', source_url: 'https://reddit.com/r/entrepreneur/jkl012',
+    source: 'reddit', source_url: null,
     title: 'Website redesign for consulting firm',
     content: 'Our consulting firm has an outdated website that needs a complete redesign. We want a professional, modern look that conveys trust and expertise. Need it to be mobile-friendly and fast. Looking for recommendations.',
     service_needed: 'Website Redesign', business_type: 'Consulting',
@@ -101,7 +101,7 @@ const demoLeads: Lead[] = [
   {
     id: generateId(), workspace_id: demoWorkspaceId, raw_post_id: null, discovery_run_id: null,
     name: 'Lisa Park', username: 'lisapark', business_name: null,
-    source: 'manual_import', source_url: 'https://twitter.com/lisapark/status/123',
+    source: 'manual_import', source_url: null,
     title: null,
     content: 'Does anyone know a good Angular developer? Need someone for a 3 month project to build a patient management system for our clinic.',
     service_needed: 'Angular Development', business_type: 'Healthcare',
@@ -116,7 +116,7 @@ const demoLeads: Lead[] = [
   {
     id: generateId(), workspace_id: demoWorkspaceId, raw_post_id: null, discovery_run_id: null,
     name: 'Tom Bradley', username: 'tombradley', business_name: 'Bradley Real Estate',
-    source: 'web_search', source_url: 'https://quora.com/question/mno345',
+    source: 'web_search', source_url: null,
     title: 'Best way to build a property listing website?',
     content: 'I run a real estate agency and want to build a custom property listing website. Need features like search, filters, virtual tours integration, and CRM. What tech stack should I use? Looking for developers who can build this.',
     service_needed: 'Web Application', business_type: 'Real Estate',
@@ -131,7 +131,7 @@ const demoLeads: Lead[] = [
   {
     id: generateId(), workspace_id: demoWorkspaceId, raw_post_id: null, discovery_run_id: null,
     name: 'Emily Davis', username: 'emilyd', business_name: null,
-    source: 'reddit', source_url: 'https://reddit.com/r/webdev/pqr678',
+    source: 'reddit', source_url: null,
     title: 'How much should I charge for a landing page?',
     content: 'I just got asked to build a landing page for a local restaurant. How much should I charge? They want a modern design with reservation integration.',
     service_needed: 'Landing Page', business_type: 'Restaurant',
@@ -146,7 +146,7 @@ const demoLeads: Lead[] = [
   {
     id: generateId(), workspace_id: demoWorkspaceId, raw_post_id: null, discovery_run_id: null,
     name: 'Raj Patel', username: 'rajpatel', business_name: 'Patel Electronics',
-    source: 'web_search', source_url: 'https://indiehackers.com/post/stu901',
+    source: 'web_search', source_url: null,
     title: 'Need custom inventory management software',
     content: 'We have a chain of electronics stores and need custom inventory management software. Something that works across all our locations with real-time stock updates, supplier management, and sales analytics. Currently using spreadsheets and its not scaling.',
     service_needed: 'Custom Software', business_type: 'Retail/Electronics',
@@ -328,7 +328,7 @@ class DemoStore {
       username: data.username || null,
       business_name: data.business_name || null,
       source: data.source || 'manual_import',
-      source_url: data.source_url || '',
+      source_url: data.source_url ?? null,
       title: data.title || null,
       content: data.content || null,
       service_needed: data.service_needed || null,

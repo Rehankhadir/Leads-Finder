@@ -1,41 +1,27 @@
 ﻿import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router-dom'
-import { ArrowUpRight, Bookmark, Briefcase, Globe, Radar, Search, Sparkles } from 'lucide-react'
+import { ArrowUpRight, Bookmark, Briefcase, Radar, Search, Sparkles } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { cn, formatRelativeTime } from '@/lib/utils'
 import { fetchOpportunities, opportunityUrl, type Opportunity, type OpportunityKind } from '@/services/opportunities.service'
+import IndiaJobs from './IndiaJobs'
 
 const modes = {
   leads: {
     label: 'Client leads', icon: Radar, fallback: 'web development',
-    description: 'Find client requests and public briefs for web development work.',
-    sources: [
-      { label: 'Public project briefs', query: '("request for proposal" OR "invitation to bid") ("website redesign" OR "web development")' },
-      { label: 'Reddit hiring posts', query: 'site:reddit.com/r/forhire ("hiring" OR "looking for")' },
-      { label: 'Client requests on the web', query: '("looking for a developer" OR "need someone to build") (website OR "web app")' },
-    ],
+    description: 'Find client requests and contract opportunities.',
   },
   projects: {
     label: 'Freelance projects', icon: Sparkles, fallback: 'web development',
     description: 'Find contract work and project requests from teams and clients.',
-    sources: [
-      { label: 'Upwork projects', query: 'site:upwork.com/freelance-jobs/apply' },
-      { label: 'Freelancer projects', query: 'site:freelancer.com/projects' },
-      { label: 'Reddit contract work', query: 'site:reddit.com/r/forhire ("hiring" OR "contract")' },
-    ],
   },
   jobs: {
     label: 'Jobs', icon: Briefcase, fallback: 'frontend developer remote',
     description: 'Find roles from hiring threads and company career pages.',
-    sources: [
-      { label: 'Company job boards', query: '(site:jobs.ashbyhq.com OR site:job-boards.greenhouse.io OR site:jobs.lever.co)' },
-      { label: 'Remote job boards', query: '(site:weworkremotely.com OR site:remoteok.com OR site:remotive.com)' },
-      { label: 'Startup jobs', query: '(site:ycombinator.com/companies OR site:wellfound.com/jobs)' },
-    ],
   },
-} satisfies Record<OpportunityKind, { label: string; icon: typeof Radar; fallback: string; description: string; sources: { label: string; query: string }[] }>
+} satisfies Record<OpportunityKind, { label: string; icon: typeof Radar; fallback: string; description: string }>
 
 const storageKey = 'lead-finder:opportunity-shortlist'
 
@@ -108,7 +94,7 @@ export default function OpportunitiesPage() {
   return (
     <div className="space-y-5">
       <header className="dashboard-heading">
-        <div><h1>Live opportunities</h1><p>Explore public listings and search across more sources.</p></div>
+        <div><h1>Live opportunities</h1><p>Browse and shortlist public listings.</p></div>
         <button type="button" className="workspace-search text-sm" aria-pressed={shortlistOnly} onClick={() => setShortlistOnly(value => !value)}>
           <Bookmark size={16} aria-hidden="true" /> Shortlist ({shortlist.length})
         </button>
@@ -132,22 +118,15 @@ export default function OpportunitiesPage() {
       {storageError && <p role="alert" className="workspace-alert">The shortlist could not be saved in this browser.</p>}
 
       {!shortlistOnly && (
-        <Card className="space-y-4 border-border p-4 sm:p-5">
+        <Card className="border-border p-4 sm:p-5">
           <div className="relative max-w-2xl">
             <Search size={17} aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input aria-label="Filter public opportunities by keyword" maxLength={100} placeholder={'Filter by skill or role, e.g. ' + mode.fallback} value={query} onChange={event => { setQuery(event.target.value); setLimit(12) }} className="h-11 pl-10" />
-          </div>
-          <div>
-            <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold"><Globe size={16} aria-hidden="true" /> Search more sources</h2>
-            <div className="flex flex-wrap gap-2">
-              {mode.sources.map(source => {
-                const search = new URLSearchParams({ q: source.query + ' ' + (query.trim() || mode.fallback), tbs: 'qdr:m' })
-                return <a key={source.label} href={'https://www.google.com/search?' + search} target="_blank" rel="noopener noreferrer" className="workspace-search text-sm">{source.label}<ArrowUpRight size={14} aria-hidden="true" /></a>
-              })}
-            </div>
+            <Input aria-label="Filter public opportunities by keyword" maxLength={100} placeholder={kind === 'jobs' ? 'Filter by role, company, or city' : 'Filter by skill or role, e.g. ' + mode.fallback} value={query} onChange={event => { setQuery(event.target.value); setLimit(12) }} className="h-11 pl-10" />
           </div>
         </Card>
       )}
+
+      {kind === 'jobs' && !shortlistOnly && <IndiaJobs query={query} />}
 
       <section className="dashboard-panel" aria-labelledby="opportunities-heading">
         <div className="dashboard-panel-heading">
@@ -155,7 +134,6 @@ export default function OpportunitiesPage() {
             <h2 id="opportunities-heading">{shortlistOnly ? 'Your shortlist' : feedKind === 'jobs' ? 'Hacker News hiring posts' : 'Client requests and contract listings'}</h2>
             <p>{shortlistOnly ? 'Saved in this browser.' : feed.isSuccess ? matches.length + ' matching public listings' : 'Listings from recent public community threads.'}</p>
           </div>
-          {!shortlistOnly && <a className="dashboard-text-link" href="https://news.ycombinator.com/submitted?id=whoishiring" target="_blank" rel="noopener noreferrer">Browse threads <ArrowUpRight size={14} aria-hidden="true" /></a>}
         </div>
         {!shortlistOnly && feed.isPending ? <p className="dashboard-empty" role="status">Loading Hacker News listings…</p>
           : !shortlistOnly && feed.isError ? (
@@ -163,7 +141,7 @@ export default function OpportunitiesPage() {
               Hacker News listings are temporarily unavailable.
               <button type="button" onClick={() => feed.refetch()} className="workspace-search">Try again</button>
             </div>
-          ) : rows.length === 0 ? <p className="dashboard-empty" role="status">{shortlistOnly ? 'Bookmark a listing to add it here.' : 'No matching listings. Try another keyword or one of the source searches above.'}</p>
+          ) : rows.length === 0 ? <p className="dashboard-empty" role="status">{shortlistOnly ? 'Bookmark a listing to add it here.' : 'No matching listings. Try a different keyword.'}</p>
           : rows.map(item => <OpportunityRow key={item.id} item={item} contract={!shortlistOnly && feedKind === 'projects' && item.kind === 'jobs'} saved={shortlist.some(saved => saved.id === item.id)} onToggle={() => toggleSaved(item)} />)}
         {!shortlistOnly && matches.length > limit && (
           <div className="border-t border-border p-4">
